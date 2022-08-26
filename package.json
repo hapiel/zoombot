@@ -9,10 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cron": "^2.1.0",
     "discord-reply": "^0.1.2",
     "discord.js": "^12.5.3",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "https": "^1.0.0",
     "jimp": "^0.16.1"
   },
   "description": ""

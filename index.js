@@ -1,5 +1,8 @@
 const express = require('express');
 const app = express();
+const https = require('https');
+const cron = require('cron');
+const pixelJointUrl ="https://pixeljoint.com/";
 const port = 3000;
 
 app.get('/', (req, res) => res.send('Hello World!'));
@@ -11,6 +14,7 @@ app.listen(port, () => console.log(`Example app listening at http://localhost:${
 const Discord = require('discord.js');
 require('discord-reply');
 const Jimp = require('jimp');
+const { url } = require('inspector');
 require('dotenv').config();
 
 const client = new Discord.Client();
@@ -89,3 +93,36 @@ async function sendScaled(msg, key, width, height){
 }
 
 //🔍🔎
+
+// CallbackFunction that get last challenge url on pixeljoint.com
+getLastWeeklyChallengeUrl = function(response) {
+  const weeklyChallengeDiscordChannel = client.channels.get('775792433005985835');
+  // get the data as a string instead of a buffer
+  response.setEncoding();
+  var store = "";
+  // on each update, add to the store
+  response.on('data', function(d) {
+      store += d;
+  }); 
+
+  //when stream is done, do the thing
+  response.on('end', function() {
+      const indexStartString = "challenge_start.png' width='50' height='50' alt='Icon' border='0' /></a></div><div class='subheader'><a href=\"";
+      const startUrl = store.indexOf(indexStartString);
+      const endUrl = store.indexOf(">Pixel Art Challenge");
+      if(startUrl !== -1 && endUrl !== -1){
+        const challengeUrl = pixelJointUrl+store.substring(startUrl + indexStartString.length, endUrl -1);
+        const newChallengeMessage = "New challenge is up :";
+        weeklyChallengeDiscordChannel.send(newChallengeMessage + challengeUrl);
+      }
+  });
+}
+
+// Job to post weekly challenges every monday at 4pm
+const weeklyChallenge = new cron.CronJob('0 16 * * Mon', ()=> {
+
+  https.request(pixelJointUrl, getLastWeeklyChallengeUrl).end();
+});
+
+// starts the job
+weeklyChallenge.start();
