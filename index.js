@@ -14,7 +14,6 @@ app.listen(port, () => console.log(`Example app listening at http://localhost:${
 const Discord = require('discord.js');
 require('discord-reply');
 const Jimp = require('jimp');
-const { url } = require('inspector');
 require('dotenv').config();
 
 const client = new Discord.Client();
@@ -33,7 +32,13 @@ client.on('message', msg => {
     // if (msg.author.username == 'yuanhai'){
     //     msg.lineReply("*yuanhai wrote:* " + msg.content);
     // }
-
+  
+  // quick test to see if scrapping works
+  if (msg.content === '/challenge') {
+    https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, function(data){
+      msg.lineReply(data);
+    })).end();
+  }
 
   if (msg.attachments.size === 1){
     // console.log(msg.attachments)
@@ -95,8 +100,7 @@ async function sendScaled(msg, key, width, height){
 //🔍🔎
 
 // CallbackFunction that get last challenge url on pixeljoint.com
-getLastWeeklyChallengeUrl = function(response) {
-  const weeklyChallengeDiscordChannel = client.channels.get('775792433005985835');
+getLastWeeklyChallengeUrl = function(callback, response) {
   // get the data as a string instead of a buffer
   response.setEncoding();
   var store = "";
@@ -112,17 +116,22 @@ getLastWeeklyChallengeUrl = function(response) {
       const endUrl = store.indexOf(">Pixel Art Challenge");
       if(startUrl !== -1 && endUrl !== -1){
         const challengeUrl = pixelJointUrl+store.substring(startUrl + indexStartString.length, endUrl -1);
-        const newChallengeMessage = "New challenge is up :";
-        weeklyChallengeDiscordChannel.send(newChallengeMessage + challengeUrl);
+        callback(challengeUrl);
       }
   });
 }
 
 // Job to post weekly challenges every monday at 4pm
 const weeklyChallenge = new cron.CronJob('0 16 * * Mon', ()=> {
-
-  https.request(pixelJointUrl, getLastWeeklyChallengeUrl).end();
+  https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, postOnWeeklyChallengeChannel)).end();
 });
+
+function postOnWeeklyChallengeChannel(challengeUrl){
+  const weeklyChallengeDiscordChannel = client.channels.cache.get('775792433005985835');
+  const newChallengeMessage = "New challenge is up :";
+  weeklyChallengeDiscordChannel.send(newChallengeMessage + challengeUrl);
+  weeklyChallengeDiscordChannel.send("Submissions accepted until sunday 12pm PST!");
+}
 
 // starts the job
 weeklyChallenge.start();
