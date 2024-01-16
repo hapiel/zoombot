@@ -15,10 +15,28 @@ const Discord = require('discord.js');
 require('discord-reply');
 const Jimp = require('jimp');
 require('dotenv').config();
+const maxWidth = 2000;
 
 const client = new Discord.Client();
 
-const maxWidth = 2000;
+// register commands
+client.commands = new Collection();
+const foldersPath = path.join(__dirname, 'commands');
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+	const commandsPath = path.join(foldersPath, folder);
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+	for (const file of commandFiles) {
+		const filePath = path.join(commandsPath, file);
+		const command = require(filePath);
+		if ('data' in command && 'execute' in command) {
+			client.commands.set(command.data.name, command);
+		} else {
+			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+		}
+	}
+}
 
 client.login(process.env.TOKEN);
 const keyList = [];
@@ -27,12 +45,30 @@ client.on('ready', () => {
   console.log('Ready!');
 });
 
+// Listen to commands
+client.on(Events.InteractionCreate, async interaction => {
+	if (!interaction.isChatInputCommand()) return;
+	const command = interaction.client.commands.get(interaction.commandName);
+
+	if (!command) {
+		console.error(`No command matching ${interaction.commandName} was found.`);
+		return;
+	}
+
+	try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error(error);
+		if (interaction.replied || interaction.deferred) {
+			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+		} else {
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+		}
+	}
+});
+
 client.on('message', msg => {
 
-    // if (msg.author.username == 'yuanhai'){
-    //     msg.lineReply("*yuanhai wrote:* " + msg.content);
-    // }
-  
   // quick test to see if scrapping works
   if (msg.content === '/challenge') {
     https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, function(data){
@@ -41,7 +77,6 @@ client.on('message', msg => {
   }
 
   if (msg.attachments.size === 1){
-    // console.log(msg.attachments)
     let width = 1500;
     let height = 1500;
     let key;
@@ -52,29 +87,14 @@ client.on('message', msg => {
       console.log(attachment.width);
     });
     if (width < maxWidth){
-      console.log('width good');
-    //   msg.react('799315152201449533');
-      const filter = (reaction, user) => reaction.emoji.id === '799315152201449533' && user.id !== client.user.id;
+
+      const filter = (reaction, user) => reaction.emoji.id === '799315152201449533'|| 
+        reaction.emoji.name === '🔍'|| 
+        reaction.emoji.name === '🔎' 
+        && user.id !== client.user.id;
 
       const collector = msg.createReactionCollector(filter);
       collector.on('collect', r => sendScaled(msg, key, width, height));
-
-    // extra emojis:
-      const filter2 = (reaction, user) => reaction.emoji.name === '🔍' && user.id !== client.user.id;
-
-      const filter3 = (reaction, user) => reaction.emoji.name === '🔎' && user.id !== client.user.id;
-
-      const collector2 = msg.createReactionCollector(filter2);
-      collector2.on('collect', r => sendScaled(msg, key, width, height));
-      const collector3 = msg.createReactionCollector(filter3);
-      collector3.on('collect', r => sendScaled(msg, key, width, height));
-
-
-    //   const filterPD = (reaction, user) => reaction.emoji.id === '827058441947840532' && user.id !== client.user.id;
-
-    //   const collectorPD = msg.createReactionCollector(filterPD);
-    //   collectorPD.on('collect', r => sendScaled(msg, key, width, height));
-
     }
   }
 });
@@ -90,10 +110,7 @@ async function sendScaled(msg, key, width, height){
     }
     
     const scaledAttachment =  new Discord.MessageAttachment(await image.getBufferAsync(Jimp.MIME_PNG), '2x.png');
-    console.log("posting");
     msg.lineReply('' , scaledAttachment);
-    // msg.channel.send('' , scaledAttachment);
-    // msg.channel.send(`${image.bitmap.width} x ${image.bitmap.height}` , scaledAttachment);
   }
 }
 
