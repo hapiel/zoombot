@@ -1,13 +1,6 @@
-const express = require('express');
-const app = express();
 const https = require('https');
 const cron = require('cron');
 const pixelJointUrl ="https://pixeljoint.com/";
-const port = 3000;
-
-app.get('/', (req, res) => res.send('Hello World!'));
-
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`));
 
 //START BOT
 
@@ -48,24 +41,43 @@ client.on('ready', () => {
 
 // Listen to commands
 client.on(Events.InteractionCreate, async interaction => {
-	if (!interaction.isChatInputCommand()) return;
-	const command = interaction.client.commands.get(interaction.commandName);
+  // INPUT FOR CHAT
+	if (interaction.isChatInputCommand()){
+    const command = interaction.client.commands.get(interaction.commandName);
 
-	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
-	}
-
-	try {
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-		}
-	}
+    if (!command) {
+      console.error(`No command matching ${interaction.commandName} was found.`);
+      return;
+    }
+  
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+      } else {
+        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+      }
+    }
+  }
+  //CONTEXT MENU
+	if (interaction.isContextMenuCommand()){
+    if (interaction.user.bot) return;
+    console.log(client)
+    const context = client.commands.get(interaction.commandName) 
+    if  (!context) {
+      interaction.reply({
+        ephemeral: true,
+        content: "This command isn't real"
+      })
+    };
+    try {
+      context.execute(client, interaction);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 });
 
 client.on('messageCreate', msg => {

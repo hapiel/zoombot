@@ -5,7 +5,7 @@ const https = require('https');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('challenge')
-		.setDescription('Replies with a link to the latests Pj challenge.'),
+		.setDescription('Replies with a link to the latest Pj challenge.'),
 	async execute(interaction) {
         https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, function(data){
             interaction.reply(data);
