@@ -14,11 +14,14 @@ app.listen(port, () => console.log(`Example app listening at http://localhost:${
 const Discord = require('discord.js');
 require('discord-reply');
 const Jimp = require('jimp');
+const { Client, Events, GatewayIntentBits } = require('discord.js');
+const { Collection } = require('discord.js');
+const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;
+const fs = require('fs');
 
-const client = new Discord.Client();
-
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 // register commands
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
