@@ -11,11 +11,9 @@ app.listen(port, () => console.log(`Example app listening at http://localhost:${
 
 //START BOT
 
-const Discord = require('discord.js');
 require('discord-reply');
 const Jimp = require('jimp');
-const { Client, Events, GatewayIntentBits } = require('discord.js');
-const { Collection } = require('discord.js');
+const { Client, Events, GatewayIntentBits, ContextMenuCommandBuilder, ApplicationCommandType, Collection  } = require('discord.js');
 const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;
@@ -80,16 +78,14 @@ client.on('messageCreate', msg => {
       width = attachment.width;
       height = attachment.height;
       key = thisKey;
-      console.log(attachment.width);
     });
     if (width < maxWidth){
-      console.log("On est la")
       const filter = (reaction, user) => reaction.emoji.id === '799315152201449533'|| 
         reaction.emoji.name === '🔍'|| 
         reaction.emoji.name === '🔎' 
         && user.id !== client.user.id;
 
-      const collector = msg.createReactionCollector(filter);
+      const collector = msg.createReactionCollector({filter: filter});
       collector.on('collect', r => sendScaled(msg, key, width, height));
     }
   }
@@ -99,7 +95,6 @@ async function sendScaled(msg, key, width, height){
   if (keyList.find(e => e === key) === undefined){
     keyList.push(key);
     let image = await Jimp.read(msg.attachments.get(key).url);
-    console.log("Je suis la")
     if (width <= 150 && height <= 100){
       await image.scale(4, Jimp.RESIZE_NEAREST_NEIGHBOR );
     } else {
