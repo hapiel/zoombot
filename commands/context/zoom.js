@@ -1,5 +1,6 @@
 const { ContextMenuCommandBuilder, ApplicationCommandType } = require("discord.js");
 const Jimp = require("jimp");
+const sharp = require("sharp");
 
 // register Context Menu
 module.exports = {
@@ -24,17 +25,29 @@ module.exports = {
         });
         return;
       }
-      // one images
+      // one image
       if(attachments.size === 1  ) {
+        // check if gif
+        
         let width = 0;
         let height = 0;
         let key;
+        let name;
         attachments.forEach((attachment, thisKey) => {
           width = attachment.width;
           height = attachment.height;
           key = thisKey;
+          name = attachment.name;
         });
-        sendScaled(interaction.targetMessage, key, width, height)
+
+        if (name.endWith(".gif")) {
+          sendScaled(interaction.targetMessage, key, width, height, true)
+        } else {
+          sendScaled(interaction.targetMessage, key, width, height, false)
+        }
+
+        console.log(name)
+        //
         return;
       }
   }
@@ -42,16 +55,21 @@ module.exports = {
   
 };
 const keyList = [];
-async function sendScaled(msg, key, width, height){
+async function sendScaled(msg, key, width, height, isGif){
   if (keyList.find(e => e === key) === undefined){
     keyList.push(key);
-    let image = await Jimp.read(msg.attachments.get(key).url);
-    if (width <= 150 && height <= 100){
-      await image.scale(4, Jimp.RESIZE_NEAREST_NEIGHBOR );
-    } else {
-      await image.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR );
+    if( isGif){
+
+    }else {
+      let image = await Jimp.read(msg.attachments.get(key).url);
+      if (width <= 150 && height <= 100){
+        await image.scale(4, Jimp.RESIZE_NEAREST_NEIGHBOR );
+      } else {
+        await image.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR );
+      }
+      const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
     }
-    const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
+
     msg.reply({content:'' , files: [{ attachment: buffer }]});
   }
 }

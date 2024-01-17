@@ -80,6 +80,7 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
+//Listener for zoom reactions with emojis
 client.on('messageCreate', msg => {
   if (msg.author.bot) return false;
   if (msg.attachments.size === 1){
@@ -106,6 +107,8 @@ client.on('messageCreate', msg => {
 async function sendScaled(msg, key, width, height){
   if (keyList.find(e => e === key) === undefined){
     keyList.push(key);
+    let imageName = await Jimp.read(msg.attachments.get(key).name);
+    console.log(imageName)
     let image = await Jimp.read(msg.attachments.get(key).url);
     if (width <= 150 && height <= 100){
       await image.scale(4, Jimp.RESIZE_NEAREST_NEIGHBOR );
