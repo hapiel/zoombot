@@ -21,7 +21,7 @@ require('dotenv').config();
 const maxWidth = 2000;
 const fs = require('fs');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions] });
 // register commands
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
@@ -70,15 +70,8 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
-client.on('message', msg => {
-
-  // quick test to see if scrapping works
-  if (msg.content === '/challenge') {
-    https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, function(data){
-      msg.lineReply(data);
-    })).end();
-  }
-
+client.on('messageCreate', msg => {
+  if (msg.author.bot) return false;
   if (msg.attachments.size === 1){
     let width = 1500;
     let height = 1500;
@@ -90,7 +83,7 @@ client.on('message', msg => {
       console.log(attachment.width);
     });
     if (width < maxWidth){
-
+      console.log("On est la")
       const filter = (reaction, user) => reaction.emoji.id === '799315152201449533'|| 
         reaction.emoji.name === '🔍'|| 
         reaction.emoji.name === '🔎' 
@@ -106,14 +99,14 @@ async function sendScaled(msg, key, width, height){
   if (keyList.find(e => e === key) === undefined){
     keyList.push(key);
     let image = await Jimp.read(msg.attachments.get(key).url);
+    console.log("Je suis la")
     if (width <= 150 && height <= 100){
       await image.scale(4, Jimp.RESIZE_NEAREST_NEIGHBOR );
     } else {
       await image.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR );
     }
-    
-    const scaledAttachment =  new Discord.MessageAttachment(await image.getBufferAsync(Jimp.MIME_PNG), '2x.png');
-    msg.lineReply('' , scaledAttachment);
+    const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
+    msg.reply({content:'' , files: [{ attachment: buffer }]});
   }
 }
 
