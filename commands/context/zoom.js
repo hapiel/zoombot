@@ -29,7 +29,7 @@ module.exports = {
       // one image
       if(attachments.size === 1  ) {
         // check if gif
-        
+        const maxWidth = 1500;
         let width = 0;
         let height = 0;
         let key;
