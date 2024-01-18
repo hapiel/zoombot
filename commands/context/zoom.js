@@ -40,16 +40,14 @@ module.exports = {
           key = thisKey;
           name = attachment.name;
         });
-
+        if (width > maxWidth){
+          interaction.targetMessage.reply({content:'This file is too big for me to handle'});
+        };
         if (name.endsWith(".gif")) {
           sendScaled(interaction.targetMessage, key, width, height, true)
         } else {
           sendScaled(interaction.targetMessage, key, width, height, false)
         }
-
-        console.log(name)
-        //
-        return;
       }
   }
 
@@ -61,7 +59,6 @@ async function sendScaled(msg, key, width, height, isGif){
     keyList.push(key);
     let buffer = null;
     if (isGif) {
-    console.log("Let's support gifs")
     let url = msg.attachments.get(key).url;
     await fetch(url)
     .then(response => {
@@ -76,7 +73,6 @@ async function sendScaled(msg, key, width, height, isGif){
       .resize(Number(width *2), Number(height *2), {kernel: sharp.kernel.nearest })
       .gif()
       .toBuffer().then(buffer => {
-        console.log(buffer)
         msg.reply({content:'' , files: [{ attachment: buffer, name: "2X.gif" }]});
       });
     })
@@ -91,11 +87,8 @@ async function sendScaled(msg, key, width, height, isGif){
       } else {
         await image.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR );
       }
-      console.log("attends")
       buffer = await image.getBufferAsync(Jimp.MIME_PNG);
       msg.reply({content:'' , files: [{ attachment: buffer }]});
     }
-
-
   }
 }
