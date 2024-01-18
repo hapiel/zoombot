@@ -3,7 +3,7 @@ const { SlashCommandBuilder } = require('discord.js');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('timeleft')
-		.setDescription('Replies with the time left until the end of challenge'),
+		.setDescription('Replies with the time left until the end of the weekly challenge'),
 	async execute(interaction) {
     const now = new Date();
     const end = getNextDayOfTheWeek("mon", false);
@@ -26,7 +26,7 @@ function getNextDayOfTheWeek(dayName, excludeToday = true, refDate = new Date())
   const dayOfWeek = ["sun","mon","tue","wed","thu","fri","sat"]
                     .indexOf(dayName.slice(0,3).toLowerCase());
   if (dayOfWeek < 0) return;
-  refDate.setHours(8,0,0,0);
+  refDate.setHours(7,0,0,0);
   refDate.setDate(refDate.getDate() + +!!excludeToday + 
                   (dayOfWeek + 7 - refDate.getDay() - +!!excludeToday) % 7);
   return refDate;
