@@ -1,6 +1,7 @@
 const { ContextMenuCommandBuilder, ApplicationCommandType } = require("discord.js");
 const Jimp = require("jimp");
 const sharp = require("sharp");
+const fetch = require('node-fetch');
 
 // register Context Menu
 module.exports = {
@@ -40,7 +41,7 @@ module.exports = {
           name = attachment.name;
         });
 
-        if (name.endWith(".gif")) {
+        if (name.endsWith(".gif")) {
           sendScaled(interaction.targetMessage, key, width, height, true)
         } else {
           sendScaled(interaction.targetMessage, key, width, height, false)
@@ -58,7 +59,29 @@ const keyList = [];
 async function sendScaled(msg, key, width, height, isGif){
   if (keyList.find(e => e === key) === undefined){
     keyList.push(key);
-    if( isGif){
+    let buffer = null;
+    if (isGif) {
+    console.log("Let's support gifs")
+    let url = msg.attachments.get(key).url;
+    await fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch the image. Status code: ${response.status}`);
+      }
+      return response.arrayBuffer();
+    })
+    .then(imageBuffer => {
+      // The 'imageBuffer' now contains the binary data of the image.
+      sharp(Buffer.from(imageBuffer), {animated: true})
+      .resize(Number(width *2), Number(height *2), {kernel: sharp.kernel.nearest })
+      .toBuffer().then(buffer => {
+        console.log(buffer)
+        msg.reply({content:'' , files: [{ attachment: buffer }]});
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching the image:', error);
+    });
 
     }else {
       let image = await Jimp.read(msg.attachments.get(key).url);
@@ -67,9 +90,11 @@ async function sendScaled(msg, key, width, height, isGif){
       } else {
         await image.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR );
       }
-      const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
+      console.log("attends")
+      buffer = await image.getBufferAsync(Jimp.MIME_PNG);
+      msg.reply({content:'' , files: [{ attachment: buffer }]});
     }
 
-    msg.reply({content:'' , files: [{ attachment: buffer }]});
+
   }
 }
