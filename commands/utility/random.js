@@ -9,8 +9,9 @@ module.exports = {
 		.setName('random')
 		.setDescription('Replies with a random PJ Art piece'),
 	async execute(interaction) {
+    console.log("attends")
         // get last art piece index
-        https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, function(data){
+        https.request(pixelJointUrl, getRandomPjPiece.bind(this, function(data){
             interaction.reply(data);
         })).end();
 	},
@@ -18,7 +19,7 @@ module.exports = {
 };
 
 // CallbackFunction that get last challenge url on pixeljoint.com
-getLastWeeklyChallengeUrl = function(callback, response) {
+getRandomPjPiece = function(callback, response) {
     // get the data as a string instead of a buffer
     response.setEncoding();
     var store = "";
@@ -29,19 +30,23 @@ getLastWeeklyChallengeUrl = function(callback, response) {
   
     //when stream is done, do the thing
     response.on('end', function() {
-        const indexStartString = "<div class=\"imgbox\" id=\"bx>";
+        const indexStartString = "<div class='imgbox' id='bx";
         const startUrl = store.indexOf(indexStartString);
-        const endUrl = startUrl + 6;
+        const endUrl = startUrl + indexStartString.length + 6;
         const index = store.substring(startUrl + indexStartString.length, endUrl -1);
-        const maxIndexNumber = Number.from(index);
-        if(startUrl !== -1 && endUrl !== -1 && maxIndexNumber !== -1){
+        const maxIndexNumber = Number(index);
+        if(startUrl !== -1 && endUrl !== -1 && maxIndexNumber){
           const index = getRandomArbitrary(minIndex, maxIndexNumber);
-          const randomUrl = pixelJointPixelartUrl + index + 'htm';
+          const randomUrl = pixelJointPixelartUrl + index + '.htm';
           callback(randomUrl);
         }
     });
   }
 
   function getRandomArbitrary(min, max) {
-    return Math.random() * (max - min) + min;
+    const randomIndex = Math.floor(Math.random() * (max - min) + min);
+    while (randomIndex === 1840) {
+      randomIndex = Math.floor(Math.random() * (max - min) + min);
+    }
+    return Math.floor(Math.random() * (max - min) + min);
   }
