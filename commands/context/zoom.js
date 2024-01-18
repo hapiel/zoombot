@@ -74,9 +74,10 @@ async function sendScaled(msg, key, width, height, isGif){
       // The 'imageBuffer' now contains the binary data of the image.
       sharp(Buffer.from(imageBuffer), {animated: true})
       .resize(Number(width *2), Number(height *2), {kernel: sharp.kernel.nearest })
+      .gif()
       .toBuffer().then(buffer => {
         console.log(buffer)
-        msg.reply({content:'' , files: [{ attachment: buffer }]});
+        msg.reply({content:'' , files: [{ attachment: buffer, name: "2X.gif" }]});
       });
     })
     .catch(error => {
