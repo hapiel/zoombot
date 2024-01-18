@@ -64,7 +64,6 @@ client.on(Events.InteractionCreate, async interaction => {
   //CONTEXT MENU
 	if (interaction.isContextMenuCommand()){
     if (interaction.user.bot) return;
-    console.log(client)
     const context = client.commands.get(interaction.commandName) 
     if  (!context) {
       interaction.reply({
