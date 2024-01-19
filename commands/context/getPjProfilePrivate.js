@@ -9,6 +9,10 @@ module.exports = {
     async execute(client, interaction) {    
       if (interaction.targetUser.bot) return;
       let { username } = interaction.targetUser;
+      const nickname = interaction.guild.members.cache.get(interaction.targetUser.id).nickname;
+      if(nickname) {
+        username = nickname;
+      }
       username = username.toLowerCase();
       const searchUserUrl = "https://pixeljoint.com/pixels/members.asp?q=1&v=search&search="+ username +"&pg=1"
       const formData = new FormData();
