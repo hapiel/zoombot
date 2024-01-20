@@ -59,9 +59,7 @@ module.exports = {
     let message = '';
     if (!url.startsWith("No artist found with username")){
       message = 'Here is a random piece';
-      if(interaction.options.getUser('artist')) {
-        message += ` from ${interaction.options.getUser('artist')}`
-      } else if (interaction.options.getString('artistname')){
+      if(artistname) {
         message += " from "+ artistname;
       }
       if(interaction.options.getInteger('fromyear') && interaction.options.getInteger('toyear')){
