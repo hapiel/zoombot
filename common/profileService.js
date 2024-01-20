@@ -3,11 +3,11 @@ const pixelJointUrl = "https://pixeljoint.com";
 function getPjName(user, guild){
   if(!user) return;
   let { username } = user;
-  console.log(user)
-  console.log(guild.members.cache.get(user.id))
   const nickname = guild.members.cache.get(user.id).nickname;
   if(nickname) {
     username = nickname;
+  } else if(user.globalName) {
+    username = user.globalName;
   }
   return username;
 }
