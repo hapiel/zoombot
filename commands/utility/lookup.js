@@ -3,7 +3,7 @@ const { getProfileUrlFromPj, getPjName } = require("../../common/profileService"
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('lookout')
+		.setName('lookup')
 		.setDescription('Replies with the link to the pixeljoint profile from a given user')
     .addUserOption(option => option.setName('artist').setDescription('User').setRequired(true))
     .addBooleanOption(option => option.setName('private').setDescription('If true, only you can see the answer')),
