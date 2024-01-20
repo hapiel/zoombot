@@ -8,8 +8,13 @@ module.exports = {
     .addUserOption(option => option.setName('artist').setDescription('User').setRequired(true))
     .addBooleanOption(option => option.setName('private').setDescription('If true, only you can see the answer')),
 	async execute(interaction) {
-    getProfileUrlFromPj(getPjName(interaction.options.getUser('artist'), interaction.guild)).then(response => {
-      interaction.reply({content: response, ephemeral: interaction.options.getBoolean('private') });
-    })
+    const artistName = getPjName(interaction.options.getUser('artist'), interaction.guild);
+    if (artistName) {
+      getProfileUrlFromPj(artistName).then(response => {
+        interaction.reply({content: "Here is" +artistName + " profile : \ln"+ response, ephemeral: interaction.options.getBoolean('private') });
+      })
+    } else {
+      interaction.reply({content: "No profile found, sorry", ephemeral: true});
+    }
   }
 }
