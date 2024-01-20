@@ -1,11 +1,17 @@
 const pixelJointUrl = "https://pixeljoint.com";
 
-async function getProfileUrlFromPj(user, guild) {
-    let { username } = user;
-      const nickname = guild.members.cache.get(user.id).nickname;
-      if(nickname) {
-        username = nickname;
-      }
+function getPjName(user, guild){
+  if(!user) return;
+  let { username } = user;
+  const nickname = guild.members.cache.get(user.id).nickname;
+  if(nickname) {
+    username = nickname;
+  }
+  return username;
+}
+
+
+async function getProfileUrlFromPj(username) {
       username = username.toLowerCase();
       const searchUserUrl = "https://pixeljoint.com/pixels/members.asp?q=1&v=search&search="+ username +"&pg=1"
       const formData = new FormData();
@@ -18,13 +24,8 @@ async function getProfileUrlFromPj(user, guild) {
         const indexStartString = ">" +  username  + "<";
         data = data.toLowerCase();
         const endEle = data.indexOf(indexStartString);
-        console.log(data);
-        console.log(endEle)
-
         const startEle = data.indexOf(indexStartString) - 150;
-        console.log(startEle)
         const element = data.substring(startEle, endEle);
-        console.log(element)
         const startUrl = element.indexOf("<a href='");
         const endUrl = element.indexOf("' onmouseover");
         if(startUrl !== -1 && endUrl !== -1){
@@ -38,4 +39,4 @@ async function getProfileUrlFromPj(user, guild) {
     return response;
 }
 
-module.exports = { getProfileUrlFromPj }
+module.exports = { getProfileUrlFromPj, getPjName }

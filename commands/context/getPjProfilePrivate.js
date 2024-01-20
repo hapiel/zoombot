@@ -1,5 +1,5 @@
 const { ContextMenuCommandBuilder, ApplicationCommandType } = require("discord.js");
-const { getProfileUrlFromPj } = require("../../common/profileService");
+const { getProfileUrlFromPj, getPjName } = require("../../common/profileService");
 
 // register Context Menu
 module.exports = {
@@ -8,7 +8,7 @@ module.exports = {
     .setType(ApplicationCommandType.User),
     async execute(client, interaction) {    
       if (interaction.targetUser.bot) return;
-      getProfileUrlFromPj(interaction.targetUser, interaction.guild).then(response=> {
+      getProfileUrlFromPj(getPjName(interaction.targetUser, interaction.guild)).then(response=> {
         interaction.reply({content: response, ephemeral: true});
       });
 
