@@ -65,7 +65,11 @@ module.exports = {
         message += " from "+ artistname;
       }
       if(interaction.options.getInteger('fromyear') && interaction.options.getInteger('toyear')){
-        message += " made between the year "+ interaction.options.getInteger('fromyear') + " and " + interaction.options.getInteger('toyear');
+        if(interaction.options.getInteger('fromyear') == interaction.options.getInteger('toyear')){
+          message += " made during the year "+ interaction.options.getInteger('fromyear');
+        }else {
+          message += " made between the year "+ interaction.options.getInteger('fromyear') + " and " + interaction.options.getInteger('toyear');
+        }
       } else if (interaction.options.getInteger('fromyear')) {
         message += " made since the year "+ interaction.options.getInteger('fromyear')
       } else if (interaction.options.getInteger('toyear')) {
