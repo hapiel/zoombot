@@ -11,7 +11,7 @@ const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;
 const fs = require('fs');
-const { getLastWeeklyChallengeUrl } = require('./common/challengeUtils');
+const { getLastWeeklyChallengeUrl, getLastWeeklyChallengeVoteUrl } = require('./common/challengeUtils');
 
 const client = new Client({ intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions] });
 // register commands
@@ -140,13 +140,15 @@ weeklyChallenge.start();
 
 // Job to remind people to vote every sunday at 4pm
 const weeklyChallengeVote = new cron.CronJob('0 16 * * Sun', ()=> {
-  https.request(pixelJointUrl, getLastWeeklyChallengeVoteUrl.bind(this, postVoteLinkOnWeeklyChallengeChannel)).end();
+  getLastWeeklyChallengeVoteUrl().then(response => {
+    postVoteLinkOnWeeklyChallengeChannel(response);
+  });
 });
 
-function postVoteLinkOnWeeklyChallengeChannel(challengeUrl){
+function postVoteLinkOnWeeklyChallengeChannel(voteUrl){
   const weeklyChallengeDiscordChannel = client.channels.cache.get('775792433005985835');
-  const newChallengeMessage = "Don't forget to vote for last week challenge entries!";
-  weeklyChallengeDiscordChannel.send(newChallengeMessage + challengeUrl);
+  const voteChallengeMessage = "Don't forget to vote for last week challenge entries!";
+  weeklyChallengeDiscordChannel.send(voteChallengeMessage + voteUrl);
 }
 
 // starts the job
