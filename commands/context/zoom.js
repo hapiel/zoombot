@@ -29,7 +29,7 @@ module.exports = {
       // one image
       if(attachments.size === 1  ) {
         // check if gif
-        const maxWidth = 1500;
+        
         let width = 0;
         let height = 0;
         let key;
@@ -40,14 +40,14 @@ module.exports = {
           key = thisKey;
           name = attachment.name;
         });
-        if (width > maxWidth){
-          interaction.targetMessage.reply({content:'This file is too big for me to handle'});
-        };
+
         if (name.endsWith(".gif")) {
           sendScaled(interaction.targetMessage, key, width, height, true)
         } else {
           sendScaled(interaction.targetMessage, key, width, height, false)
         }
+        //
+        return;
       }
   }
 
@@ -90,5 +90,7 @@ async function sendScaled(msg, key, width, height, isGif){
       buffer = await image.getBufferAsync(Jimp.MIME_PNG);
       msg.reply({content:'' , files: [{ attachment: buffer }]});
     }
+
+
   }
 }

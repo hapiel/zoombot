@@ -11,6 +11,7 @@ const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;
 const fs = require('fs');
+const { getLastWeeklyChallengeUrl } = require('./common/challengeUtils');
 
 const client = new Client({ intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions] });
 // register commands
@@ -120,31 +121,11 @@ async function sendScaled(msg, key, width, height){
 
 //🔍🔎
 
-// CallbackFunction that get last challenge url on pixeljoint.com
-getLastWeeklyChallengeUrl = function(callback, response) {
-  // get the data as a string instead of a buffer
-  response.setEncoding();
-  var store = "";
-  // on each update, add to the store
-  response.on('data', function(d) {
-      store += d;
-  }); 
-
-  //when stream is done, do the thing
-  response.on('end', function() {
-      const indexStartString = "challenge_start.png' width='50' height='50' alt='Icon' border='0' /></a></div><div class='subheader'><a href=\"";
-      const startUrl = store.indexOf(indexStartString);
-      const endUrl = store.indexOf(">Pixel Art Challenge");
-      if(startUrl !== -1 && endUrl !== -1){
-        const challengeUrl = pixelJointUrl+store.substring(startUrl + indexStartString.length, endUrl -1);
-        callback(challengeUrl);
-      }
-  });
-}
-
 // Job to post weekly challenges every monday at 4pm
 const weeklyChallenge = new cron.CronJob('0 16 * * Mon', ()=> {
-  https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, postOnWeeklyChallengeChannel)).end();
+  getLastWeeklyChallengeUrl().then(response => {
+    postOnWeeklyChallengeChannel(response);
+  });
 });
 
 function postOnWeeklyChallengeChannel(challengeUrl){
@@ -156,3 +137,17 @@ function postOnWeeklyChallengeChannel(challengeUrl){
 
 // starts the job
 weeklyChallenge.start();
+
+// Job to remind people to vote every sunday at 4pm
+const weeklyChallengeVote = new cron.CronJob('0 16 * * Sun', ()=> {
+  https.request(pixelJointUrl, getLastWeeklyChallengeVoteUrl.bind(this, postVoteLinkOnWeeklyChallengeChannel)).end();
+});
+
+function postVoteLinkOnWeeklyChallengeChannel(challengeUrl){
+  const weeklyChallengeDiscordChannel = client.channels.cache.get('775792433005985835');
+  const newChallengeMessage = "Don't forget to vote for last week challenge entries!";
+  weeklyChallengeDiscordChannel.send(newChallengeMessage + challengeUrl);
+}
+
+// starts the job
+weeklyChallengeVote.start();

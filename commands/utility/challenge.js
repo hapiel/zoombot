@@ -1,37 +1,40 @@
 const { SlashCommandBuilder } = require('discord.js');
 const pixelJointUrl ="https://pixeljoint.com/";
 const https = require('https');
+const { getLastWeeklyChallengeVoteUrl, getLastWeeklyChallengeResultsUrl } = require('../../common/challengeUtils');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('challenge')
-		.setDescription('Replies with a link to the latest Pj challenge.'),
+		.setDescription('Replies with a link to the latest Pj challenge.')
+        .addStringOption(option => option.setName('type').setDescription('The type of url you need')
+            .addChoices(
+                {name: 'Vote', value: 'vote'},
+                {name: 'Results', value: 'results'},
+                {name: 'Ongoing', value: 'ongoing'},
+                {name: 'Random', value: 'random'})
+            )
+        .addBooleanOption(option => option.setName('private').setDescription("If true, only you will see the response")),
 	async execute(interaction) {
-        https.request(pixelJointUrl, getLastWeeklyChallengeUrl.bind(this, function(data){
-            interaction.reply(data);
-        })).end();
+        const type = interaction.options.getString('type');
+        let message= "an error occured";
+        let url = '';
+        if (!type || type === 'ongoing'){
+            url = await getLastWeeklyChallengeUrl();
+            message = "Here is the link to the ongoing challenge : \n";
+        }
+        else if (type === 'vote') {
+            url = await getLastWeeklyChallengeVoteUrl();
+            message = "Here is the link to vote for the entries of last week challenge : \n";
+        } else if (type === 'results') {
+            url = await getLastWeeklyChallengeResultsUrl();
+            message = "Here is the link to the results of last week challenge : \n";
+        } else {
+            url = await await getRandomWeeklyChallengeUrl();
+            message = "Here is the link to a random challenge : \n";
+        }
+        interaction.reply({content: message + url, ephemeral: interaction.options.getBoolean('private')});
+
 	},
     
 };
-
-// CallbackFunction that get last challenge url on pixeljoint.com
-getLastWeeklyChallengeUrl = function(callback, response) {
-    // get the data as a string instead of a buffer
-    response.setEncoding();
-    var store = "";
-    // on each update, add to the store
-    response.on('data', function(d) {
-        store += d;
-    }); 
-  
-    //when stream is done, do the thing
-    response.on('end', function() {
-        const indexStartString = "challenge_start.png' width='50' height='50' alt='Icon' border='0' /></a></div><div class='subheader'><a href=\"";
-        const startUrl = store.indexOf(indexStartString);
-        const endUrl = store.indexOf(">Pixel Art Challenge");
-        if(startUrl !== -1 && endUrl !== -1){
-          const challengeUrl = pixelJointUrl + store.substring(startUrl + indexStartString.length, endUrl -1);
-          callback(challengeUrl);
-        }
-    });
-  }
