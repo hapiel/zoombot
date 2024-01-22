@@ -31,16 +31,18 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('random')
     .setDescription('Replies with a random Art piece from pixeljoint gallery')
-    .addUserOption(option => option.setName('artist').setDescription('Random art piece will only comes from specified artist'))
-    .addStringOption(option => option.setName('artistname').setDescription('Random art piece will only comes from specified artist'))
-    .addIntegerOption(option => option.setName('fromyear').setDescription('Only from pieces made after the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear()))
-    .addIntegerOption(option => option.setName('toyear').setDescription('Only from pieces made before the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear())),
+    .addUserOption(option => option.setName('artist').setDescription('Random art piece will only comes from specified artist (Discord User)'))
+    .addStringOption(option => option.setName('artistname').setDescription('Random art piece will only comes from specified artist (Enter the username from pixeljoint manually)'))
+    .addIntegerOption(option => option.setName('afteryear').setDescription('Only from pieces made after the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear()))
+    .addIntegerOption(option => option.setName('beforeyear').setDescription('Only from pieces made before the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear())),
   async execute(interaction) {
     // get last art piece index
     await interaction.deferReply({ephemeral: false});
+    const afterYear = interaction.options.getInteger('afteryear');
+    const beforeYear = interaction.options.getInteger('beforeyear');
     const artistname = interaction.options.getString('artistname') || getPjName(interaction.options.getUser('artist'), interaction.guild);
-    const debutIndex = interaction.options.getInteger('fromyear') ? parseInt(Object.keys(PIECE_INDEX_BY_YEAR)[Object.values(PIECE_INDEX_BY_YEAR).indexOf(interaction.options.getInteger('fromyear'))]) : 1000;
-    let endIndex = parseInt(Object.keys(PIECE_INDEX_BY_YEAR)[Object.values(PIECE_INDEX_BY_YEAR).indexOf(interaction.options.getInteger('toyear'))]);
+    const debutIndex = afterYear ? parseInt(Object.keys(PIECE_INDEX_BY_YEAR)[Object.values(PIECE_INDEX_BY_YEAR).indexOf(afterYear)]) : 1000;
+    let endIndex = parseInt(Object.keys(PIECE_INDEX_BY_YEAR)[Object.values(PIECE_INDEX_BY_YEAR).indexOf(beforeYear)]);
     let url;
     // get url
     if (!endIndex || endIndex === new Date().getFullYear()){
@@ -53,7 +55,7 @@ module.exports = {
     if (!artistname) {
       url = await getRandomPjPiece(debutIndex, endIndex);
     } else {
-      url = await getRandomPieceFromArtist(artistname, debutIndex, endIndex);
+      url = await getRandomPieceFromArtist(artistname, afterYear, beforeYear);
     }
     // build message
     let message = '';
@@ -62,16 +64,16 @@ module.exports = {
       if(artistname) {
         message += " from "+ artistname;
       }
-      if(interaction.options.getInteger('fromyear') && interaction.options.getInteger('toyear')){
-        if(interaction.options.getInteger('fromyear') == interaction.options.getInteger('toyear')){
-          message += " made during the year "+ interaction.options.getInteger('fromyear');
+      if(afterYear && beforeYear){
+        if(afterYear == beforeYear){
+          message += " made during the year "+ afterYear;
         }else {
-          message += " made between the year "+ interaction.options.getInteger('fromyear') + " and " + interaction.options.getInteger('toyear');
+          message += " made between the year "+ afterYear + " and " + beforeYear;
         }
-      } else if (interaction.options.getInteger('fromyear')) {
-        message += " made since the year "+ interaction.options.getInteger('fromyear')
-      } else if (interaction.options.getInteger('toyear')) {
-        message += " made before the year "+ interaction.options.getInteger('toyear')
+      } else if (afterYear) {
+        message += " made since the year "+ afterYear
+      } else if (beforeYear) {
+        message += " made before the year "+ beforeYear
       }
       message+= '\n'
     }
@@ -108,7 +110,14 @@ getRandomPjPiece = async function (debutIndex, endIndex) {
     return randomUrl;
 }
 
-async function getRandomPieceFromArtist(artistname, debutIndex, endIndex) {
+/**
+ * 
+ * @param {*} artistname 
+ * @param {*} indexFromDebutYear 
+ * @param {*} endIndex first index
+ * @returns 
+ */
+async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
   const userPjId = await getProfileUrlFromPj(artistname).then(response => {
     const endIndex = response.indexOf(".htm");
     return response.substring("https://pixeljoint.com/p/".length, endIndex);
@@ -130,9 +139,10 @@ async function getRandomPieceFromArtist(artistname, debutIndex, endIndex) {
       if (nbPages > 1) {
         const pagePicked = getRandomArbitrary(1, nbPages);
         if (pagePicked === 1) {
-          // on peut continuer d'utiliser ce data entre 1 et 21
+          // we don't need more fetch calls
           const indexOfPiece = getRandomArbitrary(1, 21);
-          url = getRandomPieceFromPage(data, indexOfPiece);
+          url = getPieceFromPage(data, indexOfPiece, afterYear, beforeYear);
+          console.log(data)
           return { url }
         } else if (pagePicked === nbPages) {
           //callback with the number to call
@@ -141,10 +151,10 @@ async function getRandomPieceFromArtist(artistname, debutIndex, endIndex) {
           return { pagePicked }
         }
       } else {
-        // on peut continuer d'utiliser ce data
+        // we don't need more fetch calls
         const numberOfPiecesOnPage = (data.match(/profile-icon-date/g) || []).length;
         const indexOfPiece = getRandomArbitrary(1, numberOfPiecesOnPage);
-        url = getRandomPieceFromPage(data, indexOfPiece);
+        url = getPieceFromPage(data, indexOfPiece, indexFromDebutYear, indexOfEndYear);
         return { url };
       }
     }
@@ -159,13 +169,48 @@ async function getRandomPieceFromArtist(artistname, debutIndex, endIndex) {
       }).then(function (data) {
         const numberOfPiecesOnPage = urlOrPageNmber.lastPage? (data.match(/profile-icon-date/g) || []).length : 21;
         const indexOfPiece = getRandomArbitrary(1, numberOfPiecesOnPage);
-        return getRandomPieceFromPage(data, indexOfPiece);
+        return getPieceFromPage(data, indexOfPiece, indexFromDebutYear, indexOfEndYear);
       })
   }
+}
 
-} 
+function getInfo(beforeYear, afterYear, dataFirstPage, nbPages){
+  if (beforeYear) {
+    const startIndexDate = dataFirstPage.lastIndexOf("<div class='profile-icon-date'>")+"<div class='profile-icon-date'>".length;
+    const date = dataFirstPage.substring(startIndexDate + 10);
+    const yearOfTheLastPieceOfThePage = date.split('/')[2];
+    if(nbPages === 1){
+      if (yearOfTheLastPieceOfThePage > beforeYear){
+        //Aucun oeuvre de l artiste avant telle annee
+      } else {
+        //rechercher la premiere (derniere) de l annee souhaitee
+      }
+    }else {
+      // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
+      //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
+      //sinon, aucune oeuvre de lartiste
+    }
+    //if we want all pieces before given year, we must find the last piece submitted that year 
+  }
+  if (afterYear) {
+    //first piece
+    //if we want all pieces after given year, we have to find first piece submitted that year
+    const startIndexDate = dataFirstPage.indexOf("<div class='profile-icon-date'>")+"<div class='profile-icon-date'>".length;
+    const date = dataFirstPage.substring(startIndexDate + 10);
+    const yearOfTheFirstPieceOfThePage = date.split('/')[2];
+    if (yearOfTheFirstPieceOfThePage < afterYear) {
+      // AUCUNE OEUVRE DE LARTISTE APRES TELLE ANNEE
+    } else {
+      if (nbPages === 1 ){
+        // parcourir toutes les oeuvres pour trouver la derniere (premiere) de l annee souhaitee
+      } else {
+        //parcourir chaque page ppour trouver la derniere (premiere) de l annee souhaitee
+      }
+    }
+  }
+}
 
-function getRandomPieceFromPage(data, indexOfPiece) {
+function getPieceFromPage(data, indexOfPiece, afterYear, beforeYear) {
   let url;
   let startIndexUrl = data.indexOf(";'><a href='/") + ";'><a href='/".length;
   let endIndexUrl  = data.indexOf("><img src='/files/icons");
