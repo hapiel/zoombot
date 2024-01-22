@@ -6,7 +6,7 @@ module.exports = {
 		.setDescription('Replies with the time left until the end of the weekly challenge'),
 	async execute(interaction) {
     const now = new Date();
-    const end = getNextDayOfTheWeek("mon", false);
+    const end = getNextDayOfTheWeek("mon", true);
     const distance = end - now;
     const _second = 1000;
     const _minute = _second * 60;

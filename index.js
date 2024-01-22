@@ -1,12 +1,11 @@
 const https = require('https');
 const cron = require('cron');
-const pixelJointUrl ="https://pixeljoint.com/";
 
 //START BOT
 
 require('discord-reply');
 const Jimp = require('jimp');
-const { Client, Events, GatewayIntentBits, ContextMenuCommandBuilder, ApplicationCommandType, Collection  } = require('discord.js');
+const { Client, Events, GatewayIntentBits, Collection  } = require('discord.js');
 const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;

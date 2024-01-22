@@ -136,6 +136,13 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
       const nbPageIndex = data.indexOf("'><i class='fa fa-chevron-right'></i><i class='fa fa-chevron-right'></i></a></div>")
       const nbPages = data.substring(nbPageIndex - 1, nbPageIndex);
       let url;
+      let dataForYear;
+      // check for data pool
+      if (beforeYear || afterYear) {
+        dataForYear = await getInfo(data, afterYear, beforeYear, nbPages)
+      }
+
+      //
       if (nbPages > 1) {
         const pagePicked = getRandomArbitrary(1, nbPages);
         if (pagePicked === 1) {
@@ -174,7 +181,7 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
   }
 }
 
-function getInfo(beforeYear, afterYear, dataFirstPage, nbPages){
+async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages){
   if (beforeYear) {
     const startIndexDate = dataFirstPage.lastIndexOf("<div class='profile-icon-date'>")+"<div class='profile-icon-date'>".length;
     const date = dataFirstPage.substring(startIndexDate + 10);
