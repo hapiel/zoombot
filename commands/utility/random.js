@@ -139,10 +139,10 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
       const nbPageIndex = data.indexOf("'><i class='fa fa-chevron-right'></i><i class='fa fa-chevron-right'></i></a></div>")
       const nbPages = data.substring(nbPageIndex - 1, nbPageIndex);
       let url;
-      let dataForYear;
+      let dataForGivenYear;
       // check for data pool
       if (beforeYear || afterYear) {
-        getInfo(data, afterYear, beforeYear, nbPages, userPjId).then(data=>{
+        dataForGivenYear = getDataPoolForGivenYear(data, afterYear, beforeYear, nbPages, userPjId).then(data=>{
 
         })
       }
@@ -186,9 +186,9 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
   }
 }
 
-async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages, userPjId){
+async function getDataPoolForGivenYear(dataFirstPage, afterYear, beforeYear, nbPages, userPjId){
   if (beforeYear) {
-    const yearOfTheLastPieceOfThePage = getYearOfPiece(data, -1);
+    const yearOfTheLastPieceOfThePage = getYearOfPiece(dataFirstPage, -1);
     if(nbPages === 1){
       if (yearOfTheLastPieceOfThePage > beforeYear){
         //Aucun oeuvre de l artiste avant telle annee
@@ -197,14 +197,15 @@ async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages, userPjId){
         //rechercher la premiere (derniere) de l annee souhaitee
       }
     }else {
-      await fetch("https://pixeljoint.com/pixels/profile_tab_icons.asp?id=" + userPjId + "&pg="+ urlOrPageNmber.pagePicked).then(function (response) {
+      await fetch("https://pixeljoint.com/pixels/profile_tab_icons.asp?id=" + userPjId + "&pg="+ urlOrPageNmber.pagePicked)
+      .then(function (response) {
         return response.text();
       }).then(function (data) {
-        
+        // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
+        //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
+        //sinon, aucune oeuvre de lartiste
       });
-      // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
-      //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
-      //sinon, aucune oeuvre de lartiste
+ 
     }
     //if we want all pieces before given year, we must find the last piece submitted that year 
   }
@@ -224,15 +225,27 @@ async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages, userPjId){
   }
 }
 
-function getCountOfString(data, stringToCount){
+function runThroughData(data, stringToMatch, condition){
   let count = 0;
-  let pos = data.indexOf(stringToCount);
+  let pos = data.indexOf(stringToMatch);
   while (pos != -1) {
     count++;
-    pos = data.indexOf(stringToCount, pos + 1);
+    pos = data.indexOf(stringToMatch, pos + 1);
   }
   return pos;
 }
+
+function runThroughDataReverse(data, stringToMatch, condition){
+  let count = 0;
+  let pos = data.lastIndexOf(stringToMatch);
+  while (pos != -1) {
+    count++;
+    pos = data.lastIndexOf(stringToMatch, pos - 1)
+  }
+  return pos;
+}
+
+
 
 function getYearOfPiece(data, index){
   const startIndexDate = data.indexOf(DATE_OF_PIECE_SCRAP, index)+DATE_OF_PIECE_SCRAP.length;
