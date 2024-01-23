@@ -4,6 +4,8 @@ const pixelJointUrl = "https://pixeljoint.com/pixels/new_icons.asp?ob=date";
 const pixelJointPixelartUrl = "https://pixeljoint.com/pixelart/";
 const pixelJointMainUrl = "https://pixeljoint.com/"
 const pixelArtInactiveString = "ACHTUNG! PIXEL ART INACTIVE!";
+
+const DATE_OF_PIECE_SCRAP = "<div class='profile-icon-date'>";
 const PIECE_INDEX_BY_YEAR = {
   1000:2004,
   1963:2005,
@@ -34,10 +36,11 @@ module.exports = {
     .addUserOption(option => option.setName('artist').setDescription('Random art piece will only comes from specified artist (Discord User)'))
     .addStringOption(option => option.setName('artistname').setDescription('Random art piece will only comes from specified artist (Enter the username from pixeljoint manually)'))
     .addIntegerOption(option => option.setName('afteryear').setDescription('Only from pieces made after the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear()))
-    .addIntegerOption(option => option.setName('beforeyear').setDescription('Only from pieces made before the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear())),
+    .addIntegerOption(option => option.setName('beforeyear').setDescription('Only from pieces made before the specified year').setMinValue(2005).setMaxValue(new Date().getFullYear()))
+    .addBooleanOption(option => option.setName('private').setDescription('Only you will see the random piece')),
   async execute(interaction) {
     // get last art piece index
-    await interaction.deferReply({ephemeral: false});
+    await interaction.deferReply({ephemeral: interaction.options.getBoolean('private')});
     const afterYear = interaction.options.getInteger('afteryear');
     const beforeYear = interaction.options.getInteger('beforeyear');
     const artistname = interaction.options.getString('artistname') || getPjName(interaction.options.getUser('artist'), interaction.guild);
@@ -139,7 +142,9 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
       let dataForYear;
       // check for data pool
       if (beforeYear || afterYear) {
-        dataForYear = await getInfo(data, afterYear, beforeYear, nbPages)
+        getInfo(data, afterYear, beforeYear, nbPages, userPjId).then(data=>{
+
+        })
       }
 
       //
@@ -181,18 +186,22 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
   }
 }
 
-async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages){
+async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages, userPjId){
   if (beforeYear) {
-    const startIndexDate = dataFirstPage.lastIndexOf("<div class='profile-icon-date'>")+"<div class='profile-icon-date'>".length;
-    const date = dataFirstPage.substring(startIndexDate + 10);
-    const yearOfTheLastPieceOfThePage = date.split('/')[2];
+    const yearOfTheLastPieceOfThePage = getYearOfPiece(data, -1);
     if(nbPages === 1){
       if (yearOfTheLastPieceOfThePage > beforeYear){
         //Aucun oeuvre de l artiste avant telle annee
+        return {error: "No pieces from that artist beore this year were found on pixeljoint"}
       } else {
         //rechercher la premiere (derniere) de l annee souhaitee
       }
     }else {
+      await fetch("https://pixeljoint.com/pixels/profile_tab_icons.asp?id=" + userPjId + "&pg="+ urlOrPageNmber.pagePicked).then(function (response) {
+        return response.text();
+      }).then(function (data) {
+        
+      });
       // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
       //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
       //sinon, aucune oeuvre de lartiste
@@ -202,9 +211,7 @@ async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages){
   if (afterYear) {
     //first piece
     //if we want all pieces after given year, we have to find first piece submitted that year
-    const startIndexDate = dataFirstPage.indexOf("<div class='profile-icon-date'>")+"<div class='profile-icon-date'>".length;
-    const date = dataFirstPage.substring(startIndexDate + 10);
-    const yearOfTheFirstPieceOfThePage = date.split('/')[2];
+    const startIndexDate = geyYearOfPiece(data, 0);
     if (yearOfTheFirstPieceOfThePage < afterYear) {
       // AUCUNE OEUVRE DE LARTISTE APRES TELLE ANNEE
     } else {
@@ -215,6 +222,22 @@ async function getInfo(dataFirstPage, afterYear, beforeYear, nbPages){
       }
     }
   }
+}
+
+function getCountOfString(data, stringToCount){
+  let count = 0;
+  let pos = data.indexOf(stringToCount);
+  while (pos != -1) {
+    count++;
+    pos = data.indexOf(stringToCount, pos + 1);
+  }
+  return pos;
+}
+
+function getYearOfPiece(data, index){
+  const startIndexDate = data.indexOf(DATE_OF_PIECE_SCRAP, index)+DATE_OF_PIECE_SCRAP.length;
+  const date = dataFirstPage.substring(startIndexDate + 10);
+  return date.split('/')[2];
 }
 
 function getPieceFromPage(data, indexOfPiece, afterYear, beforeYear) {
