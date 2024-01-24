@@ -48,6 +48,11 @@ module.exports = {
     let endIndex = parseInt(Object.keys(PIECE_INDEX_BY_YEAR)[Object.values(PIECE_INDEX_BY_YEAR).indexOf(beforeYear)]);
     let url;
     // get url
+    console.log(afterYear)
+    console.log(beforeYear)
+    if (afterYear && afterYear < beforeYear) {
+      return interaction.editReply({content: "I'm sorry, you're asking for something impossible"});
+    }
     if (!endIndex || endIndex === new Date().getFullYear()){
       endIndex = await fetch(pixelJointUrl).then(function (response) {
         return response.text();
@@ -139,36 +144,41 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
       const nbPageIndex = data.indexOf("'><i class='fa fa-chevron-right'></i><i class='fa fa-chevron-right'></i></a></div>")
       const nbPages = data.substring(nbPageIndex - 1, nbPageIndex);
       let url;
-      let dataForGivenYear;
       // check for data pool
-      if (beforeYear || afterYear) {
-        dataForGivenYear = getDataPoolForGivenYear(data, afterYear, beforeYear, nbPages, userPjId).then(data=>{
-
-        })
-      }
-
-      //
-      if (nbPages > 1) {
-        const pagePicked = getRandomArbitrary(1, nbPages);
-        if (pagePicked === 1) {
-          // we don't need more fetch calls
-          const indexOfPiece = getRandomArbitrary(1, 21);
-          url = getPieceFromPage(data, indexOfPiece, afterYear, beforeYear);
-          console.log(data)
-          return { url }
-        } else if (pagePicked === nbPages) {
-          //callback with the number to call
-          return { pagePicked , lastPage: true}
+      getDataPoolForGivenYear(data, afterYear, beforeYear, nbPages, userPjId).then( response => {
+        if (nbPages > 1) {
+          let firstPage = 1;
+          let lastPage = nbPages;
+          if(response && response.pageOfFirstBeforeYear) {
+            firstPage = response.pageOfFirstBeforeYear;
+          }
+          if(response && response.pageOfLastAfterYear) {
+            lastPage = response.pageOfLastAfterYear;
+          }
+          const pagePicked = getRandomArbitrary(firstPage, lastPage);
+          let firstIndexOfPiece = 1;
+          let lastIndexOfPiece = 21;
+          if (pagePicked === 1) {
+            // we don't need more fetch calls
+            if (beforeYear) { firstIndexOfPiece = response.firstIndexBeforeYear }
+            if (afterYear) { lastIndexOfPiece = response.lastIndexAfterYear }
+            const indexOfPiece = getRandomArbitrary(firstIndexOfPiece, lastIndexOfPiece);
+            url = getPieceFromPage(data, indexOfPiece, afterYear, beforeYear);
+            return { url }
+          } else if (pagePicked === lastPage) {
+            //callback with the number to call
+            return { pagePicked , lastPage: true, firstIndexOfPiece, lastIndexOfPiece}
+          } else {
+            return { pagePicked }
+          }
         } else {
-          return { pagePicked }
+          // we don't need more fetch calls
+          const numberOfPiecesOnPage = (data.match(/profile-icon-date/g) || []).length;
+          const indexOfPiece = getRandomArbitrary(1, numberOfPiecesOnPage);
+          url = getPieceFromPage(data, indexOfPiece, indexFromDebutYear, indexOfEndYear);
+          return { url };
         }
-      } else {
-        // we don't need more fetch calls
-        const numberOfPiecesOnPage = (data.match(/profile-icon-date/g) || []).length;
-        const indexOfPiece = getRandomArbitrary(1, numberOfPiecesOnPage);
-        url = getPieceFromPage(data, indexOfPiece, indexFromDebutYear, indexOfEndYear);
-        return { url };
-      }
+      })
     }
   });
   // if we already got the url, return immediately
@@ -187,77 +197,146 @@ async function getRandomPieceFromArtist(artistname, afterYear, beforeYear) {
 }
 
 async function getDataPoolForGivenYear(dataFirstPage, afterYear, beforeYear, nbPages, userPjId){
+  let response = {};
   if (beforeYear) {
     const yearOfTheLastPieceOfThePage = getYearOfPiece(dataFirstPage, -1);
     if(nbPages === 1){
       if (yearOfTheLastPieceOfThePage > beforeYear){
-        //Aucun oeuvre de l artiste avant telle annee
+        // No piece found before this year
+        console.log("No pieces from that artist beore this year were found on pixeljoint")
         return {error: "No pieces from that artist beore this year were found on pixeljoint"}
       } else {
         //rechercher la premiere (derniere) de l annee souhaitee
+        response.pageOfFirstBeforeYear = 1;
+        response.indexOfFirstBeforeYear = findFirstPieceBeforeYear(dataFirstPage, beforeYear);
       }
     }else {
-      await fetch("https://pixeljoint.com/pixels/profile_tab_icons.asp?id=" + userPjId + "&pg="+ urlOrPageNmber.pagePicked)
-      .then(function (response) {
-        return response.text();
-      }).then(function (data) {
-        // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
-        //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
-        //sinon, aucune oeuvre de lartiste
-      });
- 
+      for(let i = 1; i <= nbPages; i++) {
+        let index = await fetch("https://pixeljoint.com/pixels/profile_tab_icons.asp?id=" + userPjId + "&pg="+ i)
+        .then(function (response) {
+          return response.text();
+        }).then(function (data) {
+          const yearOfTheLastPieceOfThePage = getYearOfPiece(data, -1);
+          if (yearOfTheLastPieceOfThePage > beforeYear) {
+            return -1;
+          } else {
+          // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
+          //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
+          //sinon, aucune oeuvre de lartiste
+          return findFirstPieceBeforeYear(data, beforeYear);
+          }          
+        });
+        if (index !== -1) {
+          response.pageOfFirstBeforeYear = i;
+          response.indexOfFirstBeforeYear = index;
+          break;
+        }
+      }
+
     }
     //if we want all pieces before given year, we must find the last piece submitted that year 
   }
   if (afterYear) {
     //first piece
     //if we want all pieces after given year, we have to find first piece submitted that year
-    const startIndexDate = geyYearOfPiece(data, 0);
+    const yearOfTheFirstPieceOfThePage = getYearOfPiece(data, 1);
     if (yearOfTheFirstPieceOfThePage < afterYear) {
       // AUCUNE OEUVRE DE LARTISTE APRES TELLE ANNEE
+      return {error: "No pieces from that artist after this year were found on pixeljoint"}
     } else {
       if (nbPages === 1 ){
+        response.indexOfLastAfterYear = findLastPieceAfterYear(data, afterYear);
+        response.pageOfLastAfterYear = 1;
         // parcourir toutes les oeuvres pour trouver la derniere (premiere) de l annee souhaitee
       } else {
-        //parcourir chaque page ppour trouver la derniere (premiere) de l annee souhaitee
+        for(let i = 1; i <= nbPages; i++) {
+          let index = await fetch("https://pixeljoint.com/pixels/profile_tab_icons.asp?id=" + userPjId + "&pg="+ i)
+          .then(function (response) {
+            return response.text();
+          }).then(function (data) {
+            const yearOfTheFirstPieceOfThePage = getYearOfPiece(data, 1);
+            if (yearOfTheFirstPieceOfThePage >= afterYear) {
+              return -1;
+            } else {
+            // parcourir chaque depuis la derniere pour trouver si une oeuvre avant est presente
+            //si oui, remonter pour trouver la premiere (derniere) de l annee souhaitee
+            //sinon, aucune oeuvre de lartiste
+            return findLastPieceAfterYear(data, afterYear);
+            }          
+          });
+          if (index !== -1) {
+            response.pageOfLastAfterYear = i;
+            response.indexOfLastAfterYear = index;
+            break;
+          }
+        }
       }
     }
   }
 }
 
-function runThroughData(data, stringToMatch, condition){
-  let count = 0;
-  let pos = data.indexOf(stringToMatch);
-  while (pos != -1) {
-    count++;
-    pos = data.indexOf(stringToMatch, pos + 1);
+function findLastPieceAfterYear(data, afterYear){
+  let lastIndexAfterYear = -1;
+  let indexAfter = 1;
+  let startIndexUrl = data.indexOf(";'><a href='/") + ";'><a href='/".length;
+  let endIndexUrl  = data.indexOf("><img src='/files/icons");
+  let pjPieceYear = afterYear - 1;
+  if (afterYear) {
+    while (pjPieceYear < afterYear || startIndexUrl === -1) {
+      pjPieceYear = getYearOfPiece(data, indexAfter);
+      startIndexUrl = data.indexOf(";'><a href='/", startIndexUrl + 1) + ";'><a href='/".length;
+      endIndexUrl = data.indexOf("><img src='/files/icons", endIndexUrl + 1);
+      indexAfter++;
+    }
+    if(startIndexUrl === -1)  {
+      lastIndexAfterYear = -1;
+    } else {
+      lastIndexAfterYear = indexAfter -1;
+    }
   }
-  return pos;
+  return lastIndexAfterYear;
 }
 
-function runThroughDataReverse(data, stringToMatch, condition){
-  let count = 0;
-  let pos = data.lastIndexOf(stringToMatch);
-  while (pos != -1) {
-    count++;
-    pos = data.lastIndexOf(stringToMatch, pos - 1)
+function findFirstPieceBeforeYear(data, beforeYear){
+  let indexBefore = 1;
+  let startIndexUrl = data.indexOf(";'><a href='/") + ";'><a href='/".length;
+  let endIndexUrl  = data.indexOf("><img src='/files/icons");
+  let pjPieceYear = beforeYear + 1;
+  let firstIndexBeforeYear = -1;
+
+  if(beforeYear) {
+    while (pjPieceYear > beforeYear || startIndexUrl === -1) {
+      pjPieceYear = getYearOfPiece(data, indexBefore);
+      startIndexUrl = data.indexOf(";'><a href='/", startIndexUrl+1) + ";'><a href='/".length;
+      endIndexUrl = data.indexOf("><img src='/files/icons", endIndexUrl + 1);
+      indexBefore ++;
+    }
+    if(startIndexUrl === -1)  {
+      firstIndexBeforeYear = -1;
+    } else {
+      firstIndexBeforeYear = indexBefore -1;
+    }
   }
-  return pos;
+
+  return firstIndexBeforeYear;
 }
-
-
 
 function getYearOfPiece(data, index){
-  const startIndexDate = data.indexOf(DATE_OF_PIECE_SCRAP, index)+DATE_OF_PIECE_SCRAP.length;
-  const date = dataFirstPage.substring(startIndexDate + 10);
+  let startIndexDate;
+  if (index === -1)   {
+    startIndexDate = data.lastIndexOf(DATE_OF_PIECE_SCRAP)+DATE_OF_PIECE_SCRAP.length;
+  } else {
+    startIndexDate = data.indexOf(DATE_OF_PIECE_SCRAP, index)+DATE_OF_PIECE_SCRAP.length;
+  }
+  const date = data.substring(startIndexDate + 10);
   return date.split('/')[2];
 }
 
-function getPieceFromPage(data, indexOfPiece, afterYear, beforeYear) {
+function getPieceFromPage(data, indexOfPiece) {
   let url;
   let startIndexUrl = data.indexOf(";'><a href='/") + ";'><a href='/".length;
   let endIndexUrl  = data.indexOf("><img src='/files/icons");
-  let body= data;
+  let body = data;
   for (let i = 0; i < indexOfPiece; i ++) {
     startIndexUrl = body.indexOf(";'><a href='/") + ";'><a href='/".length
     endIndexUrl = body.indexOf("><img src='/files/icons")
