@@ -1,6 +1,3 @@
-const https = require('https');
-const cron = require('cron');
-
 //START BOT
 
 require('discord-reply');
@@ -10,7 +7,6 @@ const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;
 const fs = require('fs');
-const { getLastWeeklyChallengeUrl, getLastWeeklyChallengeVoteUrl } = require('./common/challengeUtils');
 
 const client = new Client({ intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions] });
 // register commands
@@ -119,36 +115,3 @@ async function sendScaled(msg, key, width, height){
 }
 
 //🔍🔎
-
-// Job to post weekly challenges every monday at 4pm
-const weeklyChallenge = new cron.CronJob('0 16 * * Mon', ()=> {
-  getLastWeeklyChallengeUrl().then(response => {
-    postOnWeeklyChallengeChannel(response);
-  });
-});
-
-function postOnWeeklyChallengeChannel(challengeUrl){
-  const weeklyChallengeDiscordChannel = client.channels.cache.get('775792433005985835');
-  const newChallengeMessage = "New challenge is up :";
-  weeklyChallengeDiscordChannel.send(newChallengeMessage + challengeUrl);
-  weeklyChallengeDiscordChannel.send("Submissions accepted until sunday 12pm PST!");
-}
-
-// starts the job
-weeklyChallenge.start();
-
-// Job to remind people to vote every sunday at 4pm
-const weeklyChallengeVote = new cron.CronJob('0 16 * * Sun', ()=> {
-  getLastWeeklyChallengeVoteUrl().then(response => {
-    postVoteLinkOnWeeklyChallengeChannel(response);
-  });
-});
-
-function postVoteLinkOnWeeklyChallengeChannel(voteUrl){
-  const weeklyChallengeDiscordChannel = client.channels.cache.get('775792433005985835');
-  const voteChallengeMessage = "Don't forget to vote for last week challenge entries!";
-  weeklyChallengeDiscordChannel.send(voteChallengeMessage + voteUrl);
-}
-
-// starts the job
-weeklyChallengeVote.start();
