@@ -66,12 +66,13 @@ getPalette = async function (msg, key, isGif) {
             } else {
               let formattedList = '';
               rawPalette.forEach((color, index) => {
+                const formattedColor = '#'+color;
                 if (index === 0) {
                   formattedList = color;
                 } else if (index % 8 === 0) {
-                  formattedList = formattedList + ' ; ' + color + '\n';
+                  formattedList = formattedList + ' ; ' + formattedColor + '\n';
                 } else {
-                  formattedList = formattedList + ' ; ' + color;
+                  formattedList = formattedList + ' ; ' + formattedColor;
                 }
               });
               msg.reply({ content: 'Only Hex codes for now, maybe fancier stuff will comes later.\nHere you go: ' + rawPalette.length + ' unique colors total:\n' + formattedList });
