@@ -68,7 +68,7 @@ getPalette = async function (msg, key, isGif) {
               rawPalette.forEach((color, index) => {
                 const formattedColor = '#'+color;
                 if (index === 0) {
-                  formattedList = color;
+                  formattedList = formattedColor;
                 } else if (index % 8 === 0) {
                   formattedList = formattedList + ' ; ' + formattedColor + '\n';
                 } else {
