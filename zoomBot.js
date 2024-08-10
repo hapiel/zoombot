@@ -1,7 +1,4 @@
 //START BOT
-
-require('discord-reply');
-const Jimp = require('jimp');
 const { Client, Events, GatewayIntentBits, Collection  } = require('discord.js');
 const path = require('path');
 require('dotenv').config();
