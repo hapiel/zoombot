@@ -7,6 +7,7 @@ const path = require('path');
 require('dotenv').config();
 const maxWidth = 2000;
 const fs = require('fs');
+const { sendScaled } = require('./common/imageUtils');
 
 const client = new Client({ intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessageReactions] });
 // register commands
@@ -98,19 +99,5 @@ client.on('messageCreate', msg => {
     }
   }
 });
-
-async function sendScaled(msg, key, width, height){
-  if (keyList.find(e => e === key) === undefined){
-    keyList.push(key);
-    let image = await Jimp.read(msg.attachments.get(key).url);
-    if (width <= 150 && height <= 100){
-      await image.scale(4, Jimp.RESIZE_NEAREST_NEIGHBOR );
-    } else {
-      await image.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR );
-    }
-    const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
-    msg.reply({content:'' , files: [{ attachment: buffer }]});
-  }
-}
 
 //🔍🔎
