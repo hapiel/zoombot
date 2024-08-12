@@ -62,7 +62,7 @@ getPalette = async function (msg, key, isGif) {
           sharp(Buffer.from(imageBuffer)).raw().toBuffer({ resolveWithObject: true }).then(data => {
             const rawPalette = this.getListOfHexColoursFromBuffer(data.data);
             if (rawPalette.length > 64) {
-              msg.reply({ content: 'I can\'t handle more than 64 colors properly and neither can you, probably.' });
+              msg.reply({ content: 'I can\'t handle more than 64 colors properly.' });
             } else {
               let formattedList = '';
               rawPalette.forEach((color, index) => {
