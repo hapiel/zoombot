@@ -64,18 +64,21 @@ getPalette = async function (msg, key, isGif) {
             if (rawPalette.length > 64) {
               msg.reply({ content: 'I can\'t handle more than 64 colors properly.' });
             } else {
-              let formattedList = '';
-              rawPalette.forEach((color, index) => {
-                const formattedColor = '#'+color;
-                if (index === 0) {
-                  formattedList = formattedColor;
-                } else if (index % 8 === 0) {
-                  formattedList = formattedList + ' ; ' + formattedColor + '\n';
-                } else {
-                  formattedList = formattedList + ' ; ' + formattedColor;
+              // Read a raw array of pixels and save it to a png
+              const formattedList = rawPalette.map((color)=> color = hexToRGBA(color)).flat();
+              const width = (formattedList.length/4)> 8? 8: formattedList.length/4;
+              const height = Math.ceil((formattedList.length/4)/ 8)? Math.ceil((formattedList.length/4)/8): 1;
+              sharp(Uint8Array.from(formattedList.concat(new Array((8 -((formattedList.length/4)%8))*4)?.fill(0))), {
+                // because the input does not contain its dimensions or how many channels it has
+                // we need to specify it in the constructor options
+                raw: {
+                  width,
+                  height,
+                  channels: 4
                 }
+              }).resize(width * 12, height *12, { kernel: sharp.kernel.nearest }).png().toBuffer().then((buffer)=> {
+                msg.reply({ content: 'Here you go: ' + rawPalette.length + ' unique colors total:\n', files: [{ attachment: buffer, name: "palette.png" }] });
               });
-              msg.reply({ content: 'Only Hex codes for now, maybe fancier stuff will comes later.\nHere you go: ' + rawPalette.length + ' unique colors total:\n' + formattedList });
             }
           })
         }
@@ -96,6 +99,19 @@ getListOfHexColoursFromBuffer = function (data) {
   }
   return [...new Set(pixels)];
 }
+const isValidHex = (hex) => /^#([A-Fa-f0-9]{3,4}){1,2}$/.test(hex)
+
+const getChunksFromString = (st, chunkSize) => st.match(new RegExp(`.{${chunkSize}}`, "g"))
+
+const convertHexUnitTo256 = (hexStr) => parseInt(hexStr.repeat(2 / hexStr.length), 16)
+
+function hexToRGBA(hex, alpha){
+    if (!isValidHex(hex)) {throw new Error("Invalid HEX")}
+    const chunkSize = Math.floor((hex.length - 1) / 3)
+    const hexArr = getChunksFromString(hex.slice(1), chunkSize)
+    const [r, g, b, a] = hexArr.map(convertHexUnitTo256)
+    return [r, g, b, a];
+}
 
 function rgba2hex(orig) {
   var a,
@@ -110,6 +126,6 @@ function rgba2hex(orig) {
   a = ((alpha) | 1 << 8).toString(16).slice(1)
   hex = hex + a;
 
-  return hex;
+  return '#'+hex;
 }
 module.exports = { sendScaled, getPalette }
