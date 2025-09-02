@@ -8,9 +8,10 @@ module.exports = {
     .setType(ApplicationCommandType.Message),
   async execute(client, interaction) {
     const attachments = interaction.targetMessage.attachments;
+    await interaction.deferReply({ ephemeral: true });
     // NO images
     if (!attachments || attachments.size === 0) {
-      interaction.reply({
+      interaction.editReply({
         content: `There is no image to zoom in this message.`,
         ephemeral: true
       });
@@ -18,7 +19,7 @@ module.exports = {
     }
     // multiple images
     if (attachments.size > 1) {
-      interaction.reply({
+      interaction.editReply({
         content: `There is too many images attached to this image, I don't know how to handle this yet.`,
         ephemeral: true
       });

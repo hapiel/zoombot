@@ -23,7 +23,7 @@ sendScaled = async function (msg, key, width, height, isGif) {
             .gif()
             .toBuffer()
             .then(buffer => {
-              msg.reply({ content: '', files: [{ attachment: buffer, name: "2X.gif" }] });
+              msg.editReply({ content: '', files: [{ attachment: buffer, name: "2X.gif" }] });
             });
         }
         else {
@@ -32,7 +32,7 @@ sendScaled = async function (msg, key, width, height, isGif) {
             .png()
             .toBuffer()
             .then(buffer => {
-              msg.reply({ content: '', files: [{ attachment: buffer, name: "2X.png" }] });
+              msg.editReply({ content: '', files: [{ attachment: buffer, name: "2X.png" }] });
             });
         }
       })
