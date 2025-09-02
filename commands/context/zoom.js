@@ -8,7 +8,7 @@ module.exports = {
     .setType(ApplicationCommandType.Message),
   async execute(client, interaction) {
     const attachments = interaction.targetMessage.attachments;
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ ephemeral: false });
     // NO images
     if (!attachments || attachments.size === 0) {
       interaction.editReply({
