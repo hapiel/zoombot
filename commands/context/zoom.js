@@ -32,13 +32,15 @@ module.exports = {
       let height = 0;
       let key;
       let name;
+      let spoiler = false;
       attachments.forEach((attachment, thisKey) => {
+        spoiler = attachment.spoiler;
         width = attachment.width;
         height = attachment.height;
         key = thisKey;
         name = attachment.name;
       });
-      return sendScaled(interaction, key, width, height, name.endsWith(".gif"));
+      return sendScaled(interaction, key, width, height, spoiler, name.endsWith(".gif"));
     }
   }
 };

@@ -2,7 +2,7 @@ const sharp = require("sharp");
 const fetch = require('node-fetch');
 const keyList = [];
 
-sendScaled = async function (msg, key, width, height, isGif) {
+sendScaled = async function (msg, key, width, height, spoiler, isGif) {
   if (keyList.find(e => e === key) === undefined) {
     keyList.push(key);
     const attachments = msg.attachments ? msg.attachments : msg.targetMessage.attachments;
@@ -23,7 +23,11 @@ sendScaled = async function (msg, key, width, height, isGif) {
             .gif()
             .toBuffer()
             .then(buffer => {
+<<<<<<< HEAD
               msg.editReply({ content: '', files: [{ attachment: buffer, name: "2X.gif" }] });
+=======
+              msg.reply({ content: '', files: [{ attachment: buffer, name: spoiler? "SPOILER_2X.gif":"2X.gif" }] });
+>>>>>>> 2b14e707af4bdc5eaf51e5043560f043fc374628
             });
         }
         else {
@@ -32,7 +36,11 @@ sendScaled = async function (msg, key, width, height, isGif) {
             .png()
             .toBuffer()
             .then(buffer => {
+<<<<<<< HEAD
               msg.editReply({ content: '', files: [{ attachment: buffer, name: "2X.png" }] });
+=======
+              msg.reply({ content: '', files: [{ attachment: buffer, name: spoiler? "SPOILER_2X.png":"2X.png" }] });
+>>>>>>> 2b14e707af4bdc5eaf51e5043560f043fc374628
             });
         }
       })
