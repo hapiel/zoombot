@@ -29,8 +29,8 @@ for (const folder of commandFolders) {
 client.login(process.env.TOKEN);
 const keyList = [];
 
-client.on('ready', () => {
-  console.log('Ready!');
+client.on('clientReady', () => {
+  console.log('clientReady!');
 });
 
 // Listen to commands
